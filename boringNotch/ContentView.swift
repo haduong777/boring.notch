@@ -370,8 +370,13 @@ struct ContentView: View {
                         NotchHomeView(albumArtNamespace: albumArtNamespace)
                     case .shelf:
                         ShelfView()
+                    case .codex:
+                        CodexUsageView()
                     }
                 }
+                // Preserve the outgoing calendar's body height until the
+                // expansion state animates down, even after Home is removed.
+                .frame(height: vm.isCalendarMonthExpanded ? 280 : 120, alignment: .top)
                 .transition(
                     .scale(scale: 0.8, anchor: .top)
                     .combined(with: .opacity)

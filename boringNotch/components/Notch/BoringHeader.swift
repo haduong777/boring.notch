@@ -13,14 +13,16 @@ struct BoringHeader: View {
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var coordinator = BoringViewCoordinator.shared
     @StateObject var tvm = ShelfStateViewModel.shared
+    @Default(.boringShelf) private var boringShelf
+    @Default(.showTrayTab) private var showTrayTab
+    @Default(.showCodexTab) private var showCodexTab
     var body: some View {
         HStack(spacing: 0) {
             HStack {
-                if (!tvm.isEmpty || coordinator.alwaysShowTabs) && Defaults[.boringShelf] {
-                    TabSelectionView()
-                } else if vm.notchState == .open {
-                    EmptyView()
-                }
+                TabSelectionView(
+                    showShelf: showTrayTab && (!tvm.isEmpty || coordinator.alwaysShowTabs) && boringShelf,
+                    showCodex: showCodexTab
+                )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .opacity(vm.notchState == .closed ? 0 : 1)

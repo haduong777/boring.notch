@@ -96,6 +96,20 @@ final class XPCHelperClient: NSObject {
     }
     
     // MARK: - Accessibility
+
+    @MainActor func readCodexUsage() async throws -> CodexUsageSnapshot {
+        let service = ensureRemoteService()
+        let result: Data = try await service.withContinuation { service, continuation in
+            service.readCodexUsage { data, errorCode in
+                if let data {
+                    continuation.resume(returning: data)
+                } else {
+                    continuation.resume(throwing: CodexUsageError(rawValue: errorCode ?? "") ?? .helperUnavailable)
+                }
+            }
+        }
+        return try JSONDecoder().decode(CodexUsageSnapshot.self, from: result)
+    }
     
     nonisolated func requestAccessibilityAuthorization() {
         Task {
@@ -246,5 +260,3 @@ final class XPCHelperClient: NSObject {
 extension Notification.Name {
     static let accessibilityAuthorizationChanged = Notification.Name("accessibilityAuthorizationChanged")
 }
-
-

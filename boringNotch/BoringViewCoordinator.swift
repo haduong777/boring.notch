@@ -50,7 +50,12 @@ struct ExpandedItem {
 class BoringViewCoordinator: ObservableObject {
     static let shared = BoringViewCoordinator()
 
-    @Published var currentView: NotchViews = .home
+    @Published var currentView: NotchViews = .home {
+        didSet {
+            // Automatic shelf opening and remembered selections must also honor visibility.
+            if !isTabVisible(currentView) { currentView = .home }
+        }
+    }
     @Published var helloAnimationRunning: Bool = false
     private var sneakPeekDispatch: DispatchWorkItem?
     private var expandingViewDispatch: DispatchWorkItem?
@@ -100,8 +105,31 @@ class BoringViewCoordinator: ObservableObject {
     @Published var optionKeyPressed: Bool = true
     private var accessibilityObserver: Any?
     private var hudReplacementCancellable: AnyCancellable?
+    private var tabVisibilityCancellable: AnyCancellable?
+
+    func isTabVisible(_ tab: NotchViews) -> Bool {
+        switch tab {
+        case .home: return true
+        case .shelf: return Defaults[.showTrayTab] && Defaults[.boringShelf]
+        case .codex: return Defaults[.showCodexTab]
+        }
+    }
 
     private init() {
+        tabVisibilityCancellable = Publishers.CombineLatest3(
+            Defaults.publisher(.showTrayTab),
+            Defaults.publisher(.showCodexTab),
+            Defaults.publisher(.boringShelf)
+        )
+        .sink { [weak self] _ in
+            Task { @MainActor in
+                guard let self, !self.isTabVisible(self.currentView) else { return }
+                withAnimation(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? nil : .smooth(duration: 0.35)) {
+                    self.currentView = .home
+                }
+            }
+        }
+
         // Perform migration from name-based to UUID-based storage
         if preferredScreenUUID == nil, let legacyName = legacyPreferredScreenName {
             // Try to find screen by name and migrate to UUID

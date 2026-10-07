@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C0DE10000000000000000001 /* CodexUsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000001 /* CodexUsageSnapshot.swift */; };
+		C0DE10000000000000000002 /* CodexUsageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000002 /* CodexUsageManager.swift */; };
+		C0DE10000000000000000003 /* CodexUsageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000003 /* CodexUsageView.swift */; };
 		CA1E10000000000000000001 /* MonthCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1E00000000000000000001 /* MonthCalendarView.swift */; };
 		CA1E10000000000000000000 /* CalendarMonth.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1E00000000000000000000 /* CalendarMonth.swift */; };
 		1100290C2E847E2800035A57 /* NSItemProvider+LoadHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1100290B2E847E2800035A57 /* NSItemProvider+LoadHelpers.swift */; };
@@ -183,6 +186,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C0DE00000000000000000001 /* CodexUsageSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoringNotchXPCHelper/CodexUsageSnapshot.swift; sourceTree = SOURCE_ROOT; };
+		C0DE00000000000000000002 /* CodexUsageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = boringNotch/managers/CodexUsageManager.swift; sourceTree = SOURCE_ROOT; };
+		C0DE00000000000000000003 /* CodexUsageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = boringNotch/components/Codex/CodexUsageView.swift; sourceTree = SOURCE_ROOT; };
 		CA1E00000000000000000001 /* MonthCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthCalendarView.swift; sourceTree = "<group>"; };
 		CA1E00000000000000000000 /* CalendarMonth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarMonth.swift; sourceTree = "<group>"; };
 		1100290B2E847E2800035A57 /* NSItemProvider+LoadHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSItemProvider+LoadHelpers.swift"; sourceTree = "<group>"; };
@@ -547,6 +553,9 @@
 		14CEF4092C5CAED200855D72 = {
 			isa = PBXGroup;
 			children = (
+				C0DE00000000000000000001 /* CodexUsageSnapshot.swift */,
+				C0DE00000000000000000002 /* CodexUsageManager.swift */,
+				C0DE00000000000000000003 /* CodexUsageView.swift */,
 				112B0EB62E30DD0F00562D6C /* mediaremote-adapter */,
 				14CEF4142C5CAED300855D72 /* boringNotch */,
 				11F748502EC9AABA00F841DB /* BoringNotchXPCHelper */,
@@ -911,6 +920,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C0DE10000000000000000001 /* CodexUsageSnapshot.swift in Sources */,
+				C0DE10000000000000000002 /* CodexUsageManager.swift in Sources */,
+				C0DE10000000000000000003 /* CodexUsageView.swift in Sources */,
 				115C12EC2ED3D003009754CA /* OpenNotchHUD.swift in Sources */,
 				14C08BB92C8DE4B1000F8AA0 /* BoringCalendar.swift in Sources */,
 				CA1E10000000000000000001 /* MonthCalendarView.swift in Sources */,

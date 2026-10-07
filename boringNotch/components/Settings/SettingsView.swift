@@ -33,6 +33,9 @@ struct SettingsView: View {
                 NavigationLink(value: "Appearance") {
                     Label("Appearance", systemImage: "eye")
                 }
+                NavigationLink(value: "Tabs") {
+                    Label("Tabs", systemImage: "rectangle.topthird.inset.filled")
+                }
                 NavigationLink(value: "Media") {
                     Label("Media", systemImage: "play.laptopcomputer")
                 }
@@ -75,6 +78,8 @@ struct SettingsView: View {
                     GeneralSettings()
                 case "Appearance":
                     Appearance()
+                case "Tabs":
+                    TabsSettings()
                 case "Media":
                     Media()
                 case "Calendar":
@@ -124,6 +129,46 @@ struct SettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("AccentColorChanged"))) { _ in
             accentColorUpdateTrigger = UUID()
         }
+    }
+}
+
+struct TabsSettings: View {
+    @ObservedObject private var coordinator = BoringViewCoordinator.shared
+    @Default(.showTrayTab) private var showTrayTab
+    @Default(.boringShelf) private var boringShelf
+
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent {
+                    Text("Always on").foregroundStyle(.secondary)
+                } label: {
+                    Label("Home", systemImage: "house.fill")
+                }
+                Defaults.Toggle(key: .showTrayTab) {
+                    Label("Tray", systemImage: "tray.fill")
+                }
+                .help("Show the Tray tab. Shelf must also be enabled in Shelf settings.")
+                Defaults.Toggle(key: .showCodexTab) {
+                    HStack(spacing: 8) {
+                        Image("CodexIcon").renderingMode(.template).resizable().scaledToFit()
+                            .frame(width: 16, height: 16)
+                            .accessibilityHidden(true)
+                        Text("Codex")
+                    }
+                }
+            } header: {
+                Text("Show in the notch")
+            }
+
+            Section {
+                Toggle("Show Tray when empty", isOn: $coordinator.alwaysShowTabs)
+                    .disabled(!showTrayTab || !boringShelf)
+            } header: {
+                Text("Behavior")
+            }
+        }
+        .navigationTitle("Tabs")
     }
 }
 
@@ -1175,7 +1220,6 @@ struct Appearance: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Always show tabs", isOn: $coordinator.alwaysShowTabs)
                 Defaults.Toggle(key: .settingsIconInNotch) {
                     Text("Show settings icon in notch")
                 }

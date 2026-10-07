@@ -11,6 +11,20 @@ import IOKit
 import CoreGraphics
 
 class BoringNotchXPCHelper: NSObject, BoringNotchXPCHelperProtocol {
+    private static let codexQueue = DispatchQueue(label: "theboringteam.boringnotch.codex", qos: .utility)
+
+    @objc func readCodexUsage(withReply reply: @escaping (Data?, String?) -> Void) {
+        Self.codexQueue.async {
+            do {
+                let snapshot = try CodexUsageReader.fetch()
+                reply(try JSONEncoder().encode(snapshot), nil)
+            } catch let error as CodexUsageError {
+                reply(nil, error.rawValue)
+            } catch {
+                reply(nil, CodexUsageError.invalidResponse.rawValue)
+            }
+        }
+    }
     
     @objc func isAccessibilityAuthorized(with reply: @escaping (Bool) -> Void) {
         reply(AXIsProcessTrusted())
