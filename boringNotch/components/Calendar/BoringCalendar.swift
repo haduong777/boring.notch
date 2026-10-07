@@ -70,7 +70,7 @@ struct WheelPicker: View {
             }
         }
         .onAppear {
-            scrollToToday(config: config)
+            scrollToSelection()
         }
         // When parent updates the bound selectedDate (e.g., view reopen), center the wheel on it
         .onChange(of: selectedDate) { _, newValue in
@@ -138,11 +138,9 @@ struct WheelPicker: View {
         }
     }
 
-    private func scrollToToday(config: Config) {
-        let today = Date()
+    private func scrollToSelection() {
         byClick = true
-        scrollPosition = indexForDate(today)
-        selectedDate = today
+        scrollPosition = indexForDate(selectedDate)
     }
 
     // MARK: - Index/Date mapping with steps and spacers
@@ -180,67 +178,107 @@ struct WheelPicker: View {
 
 struct CalendarView: View {
     @EnvironmentObject var vm: BoringViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var calendarManager = CalendarManager.shared
     @State private var selectedDate = Date()
+    @State private var displayedMonth = Date()
+    @State private var lookupDate = Date()
+
+    private var headerDate: Date {
+        vm.isCalendarMonthExpanded ? displayedMonth : selectedDate
+    }
 
     var body: some View {
+        let headerLayout = vm.isCalendarMonthExpanded
+            ? AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 6))
+            : AnyLayout(VStackLayout(alignment: .leading))
+
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 8) {
-                VStack(alignment: .leading) {
-                    Text(selectedDate.formatted(.dateTime.month(.abbreviated)))
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                    Text(selectedDate.formatted(.dateTime.year()))
-                        .font(.title3)
-                        .fontWeight(.light)
-                        .foregroundColor(Color(white: 0.65))
+                Button {
+                    if !vm.isCalendarMonthExpanded {
+                        displayedMonth = selectedDate
+                        lookupDate = selectedDate
+                    }
+                    withAnimation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.85)) {
+                        vm.isCalendarMonthExpanded.toggle()
+                    }
+                } label: {
+                    HStack(alignment: .top, spacing: 4) {
+                        headerLayout {
+                            Text(headerDate.formatted(.dateTime.month(.abbreviated)))
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                            Text(headerDate.formatted(.dateTime.year()))
+                                .font(.title3)
+                                .fontWeight(.light)
+                                .foregroundColor(Color(white: 0.65))
+                        }
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundColor(Color(white: 0.65))
+                            .padding(.top, 5)
+                    }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .help(vm.isCalendarMonthExpanded ? "Show day view" : "Show month view")
+                .accessibilityLabel(headerDate.formatted(.dateTime.month(.wide).year()))
+                .accessibilityValue(vm.isCalendarMonthExpanded ? "Month view" : "Day view")
+                .accessibilityHint("Toggle between day and month view")
 
-                ZStack(alignment: .top) {
-                    WheelPicker(selectedDate: $selectedDate, config: Config())
-                    HStack(alignment: .top) {
-                        LinearGradient(
-                            colors: [Color.black, .clear], startPoint: .leading, endPoint: .trailing
-                        )
-                        .frame(width: 20)
-                        Spacer()
-                        LinearGradient(
-                            colors: [.clear, Color.black], startPoint: .leading, endPoint: .trailing
-                        )
-                        .frame(width: 20)
+                if vm.isCalendarMonthExpanded {
+                    Spacer(minLength: 0)
+                } else {
+                    ZStack(alignment: .top) {
+                        WheelPicker(selectedDate: $selectedDate, config: Config())
+                        HStack(alignment: .top) {
+                            LinearGradient(colors: [Color.black, .clear], startPoint: .leading, endPoint: .trailing)
+                                .frame(width: 20)
+                            Spacer()
+                            LinearGradient(colors: [.clear, Color.black], startPoint: .leading, endPoint: .trailing)
+                                .frame(width: 20)
+                        }
+                        .allowsHitTesting(false)
                     }
                 }
             }
+            .frame(height: vm.isCalendarMonthExpanded ? 32 : 50, alignment: .top)
 
-            let filteredEvents = EventListView.filteredEvents(
-                events: calendarManager.events
-            )
-            if filteredEvents.isEmpty {
-                EmptyEventsView(selectedDate: selectedDate)
-                Spacer(minLength: 0)
+            if vm.isCalendarMonthExpanded {
+                MonthCalendarView(displayedMonth: $displayedMonth, selectedDate: $lookupDate)
+                    .transition(.opacity)
             } else {
-                EventListView(events: calendarManager.events)
+                let filteredEvents = EventListView.filteredEvents(events: calendarManager.events)
+                if filteredEvents.isEmpty {
+                    EmptyEventsView(selectedDate: selectedDate)
+                        .padding(.top, 6)
+                    Spacer(minLength: 0)
+                } else {
+                    EventListView(events: calendarManager.events)
+                }
             }
         }
         .listRowBackground(Color.clear)
-        .frame(height: 120)
+        .frame(height: vm.isCalendarMonthExpanded ? 280 : 120, alignment: .top)
         .onChange(of: selectedDate) {
             Task {
                 await calendarManager.updateCurrentDate(selectedDate)
             }
         }
         .onChange(of: vm.notchState) { _, _ in
-            Task {
-                await calendarManager.updateCurrentDate(Date.now)
-                selectedDate = Date.now
-            }
+            resetToToday()
         }
         .onAppear {
-            Task {
-                await calendarManager.updateCurrentDate(Date.now)
-                selectedDate = Date.now
-            }
+            resetToToday()
+        }
+    }
+
+    private func resetToToday() {
+        selectedDate = Date.now
+        Task {
+            await calendarManager.updateCurrentDate(selectedDate)
         }
     }
 }

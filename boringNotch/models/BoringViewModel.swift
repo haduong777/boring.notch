@@ -32,6 +32,18 @@ class BoringViewModel: NSObject, ObservableObject {
     @Published var isHoveringCalendar: Bool = false
     @Published var isBatteryPopoverActive: Bool = false
 
+    @Published var isCalendarMonthExpanded: Bool = false {
+        didSet {
+            if notchState == .open {
+                notchSize = expandedNotchSize
+            }
+        }
+    }
+
+    var expandedNotchSize: CGSize {
+        isCalendarMonthExpanded ? expandedCalendarNotchSize : openNotchSize
+    }
+
     @Published var screenUUID: String?
 
     @Published var notchSize: CGSize = getClosedNotchSize()
@@ -190,7 +202,7 @@ class BoringViewModel: NSObject, ObservableObject {
     }
 
     func open() {
-        self.notchSize = openNotchSize
+        self.notchSize = expandedNotchSize
         self.notchState = .open
         
         // Force music information update when notch is opened
@@ -205,6 +217,7 @@ class BoringViewModel: NSObject, ObservableObject {
         self.notchSize = getClosedNotchSize(screenUUID: self.screenUUID)
         self.closedNotchSize = self.notchSize
         self.notchState = .closed
+        self.isCalendarMonthExpanded = false
         self.isBatteryPopoverActive = false
         self.coordinator.sneakPeek.show = false
         self.edgeAutoOpenActive = false

@@ -14,13 +14,27 @@ import SwiftUI
 
 struct MusicPlayerView: View {
     @EnvironmentObject var vm: BoringViewModel
+    @Default(.enableLyrics) private var enableLyrics
     let albumArtNamespace: Namespace.ID
 
     var body: some View {
-        HStack {
-            AlbumArtView(vm: vm, albumArtNamespace: albumArtNamespace).padding(.all, 5)
-            MusicControlsView().drawingGroup().compositingGroup()
+        let layout = vm.isCalendarMonthExpanded
+            ? AnyLayout(VStackLayout(spacing: 6))
+            : AnyLayout(HStackLayout())
+
+        // Keep the same artwork and controls alive when switching layouts so
+        // playback, slider interaction and matched-geometry transitions persist.
+        layout {
+            AlbumArtView(vm: vm, albumArtNamespace: albumArtNamespace)
+                .frame(width: vm.isCalendarMonthExpanded ? (enableLyrics ? 144 : 160) : nil,
+                       height: vm.isCalendarMonthExpanded ? (enableLyrics ? 144 : 160) : nil)
+                .padding(vm.isCalendarMonthExpanded ? 0 : 5)
+            MusicControlsView()
+                .drawingGroup()
+                .compositingGroup()
+                .padding(.horizontal, vm.isCalendarMonthExpanded ? 24 : 0)
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -118,24 +132,49 @@ struct MusicControlsView: View {
     @State private var lastDragged: Date = .distantPast
     @Default(.musicControlSlots) private var slotConfig
     @Default(.musicControlSlotLimit) private var slotLimit
+    @Default(.enableLyrics) private var enableLyrics
+
+    private var hasSongInfo: Bool {
+        !musicManager.songTitle.isEmpty || !musicManager.artistName.isEmpty || enableLyrics
+    }
+
+    private var expandedSongInfoHeight: CGFloat {
+        guard hasSongInfo else { return 0 }
+        // Match MarqueeText's line heights, reserving only the lines we actually show.
+        return NSFont.preferredFont(forTextStyle: .headline).pointSize * 2.6
+            + (enableLyrics ? NSFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.3 : 0)
+    }
 
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: vm.isCalendarMonthExpanded ? 4 : nil) {
             songInfoAndSlider
             slotToolbar
         }
         .buttonStyle(PlainButtonStyle())
     }
 
+    @ViewBuilder
     private var songInfoAndSlider: some View {
-        GeometryReader { geo in
-            VStack(alignment: .leading, spacing: 4) {
-                songInfo(width: geo.size.width)
-                musicSlider
+        if vm.isCalendarMonthExpanded {
+            GeometryReader { geo in
+                VStack(alignment: .leading, spacing: 0) {
+                    if hasSongInfo {
+                        songInfo(width: geo.size.width)
+                    }
+                    musicSlider
+                }
             }
+            .frame(height: expandedSongInfoHeight + 36)
+        } else {
+            GeometryReader { geo in
+                VStack(alignment: .leading, spacing: 4) {
+                    songInfo(width: geo.size.width)
+                    musicSlider
+                }
+            }
+            .padding(.top, 10)
+            .padding(.leading, 5)
         }
-        .padding(.top, 10)
-        .padding(.leading, 5)
     }
 
     private func songInfo(width: CGFloat) -> some View {
@@ -442,6 +481,7 @@ struct NotchHomeView: View {
     private var mainContent: some View {
         HStack(alignment: .top, spacing: (shouldShowCamera && Defaults[.showCalendar]) ? 10 : 15) {
             MusicPlayerView(albumArtNamespace: albumArtNamespace)
+                .frame(height: vm.isCalendarMonthExpanded ? 280 : 120, alignment: .top)
 
             if Defaults[.showCalendar] {
                 CalendarView()
@@ -456,6 +496,7 @@ struct NotchHomeView: View {
             if shouldShowCamera {
                 CameraPreviewView(webcamManager: webcamManager)
                     .scaledToFit()
+                    .frame(height: 120, alignment: .top)
                     .opacity(vm.notchState == .closed ? 0 : 1)
                     .blur(radius: vm.notchState == .closed ? 20 : 0)
                     .animation(.interactiveSpring(response: 0.32, dampingFraction: 0.76, blendDuration: 0), value: shouldShowCamera)

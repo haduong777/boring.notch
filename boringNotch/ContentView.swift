@@ -16,6 +16,7 @@ import SwiftUIIntrospect
 @MainActor
 struct ContentView: View {
     @EnvironmentObject var vm: BoringViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject var webcamManager = WebcamManager.shared
 
     @ObservedObject var coordinator = BoringViewCoordinator.shared
@@ -36,6 +37,7 @@ struct ContentView: View {
     @Default(.useMusicVisualizer) var useMusicVisualizer
 
     @Default(.showNotHumanFace) var showNotHumanFace
+    @Default(.showCalendar) private var showCalendar
 
     // Shared interactive spring for movement/resizing to avoid conflicting animations
     private let animationSpring = Animation.interactiveSpring(response: 0.38, dampingFraction: 0.8, blendDuration: 0)
@@ -118,7 +120,7 @@ struct ContentView: View {
                     )
                 
                 mainLayout
-                    .frame(height: vm.notchState == .open ? vm.notchSize.height : nil)
+                    .frame(height: vm.notchState == .open ? vm.notchSize.height : nil, alignment: .top)
                     .conditionalModifier(true) { view in
                         let openAnimation = Animation.spring(response: 0.42, dampingFraction: 0.8, blendDuration: 0)
                         let closeAnimation = Animation.spring(response: 0.45, dampingFraction: 1.0, blendDuration: 0)
@@ -203,7 +205,9 @@ struct ContentView: View {
             }
         }
         .padding(.bottom, 8)
-        .frame(maxWidth: windowSize.width, maxHeight: windowSize.height, alignment: .top)
+        // Fill the hosting view explicitly; a max-height frame can center the
+        // shorter notch in spare panel space and animate that unwanted offset.
+        .frame(width: windowSize.width, height: windowSize.height, alignment: .top)
         .compositingGroup()
         .scaleEffect(
             x: gestureScale,
@@ -211,9 +215,26 @@ struct ContentView: View {
             anchor: .top
         )
         .animation(.smooth, value: gestureProgress)
-        .background(dragDetector)
+        .background(alignment: .top) {
+            // Preserve the original closed-notch drop area despite the taller panel.
+            dragDetector.frame(height: openNotchSize.height + shadowPadding)
+        }
         .preferredColorScheme(.dark)
         .environmentObject(vm)
+        .onChange(of: coordinator.currentView) { _, newView in
+            if newView != .home && vm.isCalendarMonthExpanded {
+                // onChange runs outside the tab button's animation transaction.
+                // Animate the resulting height change alongside the tab transition.
+                withAnimation(reduceMotion ? nil : .smooth(duration: 0.35)) {
+                    vm.isCalendarMonthExpanded = false
+                }
+            }
+        }
+        .onChange(of: showCalendar) { _, isShown in
+            if !isShown {
+                vm.isCalendarMonthExpanded = false
+            }
+        }
         .onChange(of: vm.anyDropZoneTargeting) { _, isTargeted in
             anyDropDebounceTask?.cancel()
 
